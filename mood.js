@@ -4,14 +4,17 @@ const bing_api_key = BING_API_KEY
 function runSearch() {
 
   // TODO: Clear the results pane before you run a new search
+  document.getElementById("resultsImageContainer").innerHTML = "";
 
   openResultsPane();
 
   // TODO: Build your query by combining the bing_api_endpoint and a query attribute
   //  named 'q' that takes the value from the search bar input field.
+  const query = document.querySelector(".search input").value;
+  const url = `${bing_api_endpoint}?q=${encodeURIComponent(query)}`;
 
   let request = new XMLHttpRequest();
-
+  request.open("GET", url);
   // TODO: Construct the request object and add appropriate event listeners to
   // handle responses. See:
   // https://developer.mozilla.org/en-US/docs/Web/API/XMLHttpRequest_API/Using_XMLHttpRequest
@@ -22,15 +25,61 @@ function runSearch() {
   // https://docs.microsoft.com/en-us/bing/search-apis/bing-image-search/reference/headers
   //   - When you get your responses, add elements to the DOM in #resultsImageContainer to
   //     display them to the user
-  //   - HINT: You'll need to ad even listeners to them after you add them to the DOM
+  //   - HINT: You'll need to add event listeners to them after you add them to the DOM
   //
-  // request.setRequestHeader("Ocp-Apim-Subscription-Key", bing_api_key);
-
+  request.setRequestHeader("Ocp-Apim-Subscription-Key", bing_api_key);
+  request.responseType = 'json';
+  request.onload = function() {
+    console.log(request.response);
+    displayImages(request.response.value);
+    displayRelatedRes(request.response.relatedSearches);
+  };
   // TODO: Send the request
+  request.send();
 
   return false;  // Keep this; it keeps the browser from sending the event
                   // further up the DOM chain. Here, we don't want to trigger
                   // the default form submission behavior.
+}
+
+function addImage(url) {
+  // This will add image to board
+  const board = document.getElementById("board");
+  const image = document.createElement("img");
+  image.src = url;
+  board.appendChild(image);
+}
+
+function displayImages(images) {
+  // This will display images in image container and add image if clicked
+  const container = document.getElementById("resultsImageContainer");
+  images.forEach(image => {
+    const imgElement = document.createElement("img");
+    imgElement.src = image.thumbnailUrl;
+    //imgElement.alt = image.name;
+    //imgElement.title = image.name;
+    imgElement.addEventListener("click", function() {
+      addImage(image.contentUrl);
+    });
+    container.appendChild(imgElement);
+  });
+}
+
+function displayRelatedRes(suggestions) {
+  const container = document.getElementById("suggestions_list");
+  container.innerHTML = "";
+  suggestions.forEach(suggestion => {
+      const li = document.createElement("li");
+      // const button = document.createElement("button");
+      li.textContent = suggestion.text;
+      li.addEventListener("click", function() {
+          document.querySelector(".search input").value = suggestion.text;
+          runSearch();
+      });
+
+      //li.appendChild(button);
+      container.appendChild(li);
+  });
 }
 
 function openResultsPane() {
